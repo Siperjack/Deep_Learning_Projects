@@ -1,0 +1,17 @@
+#Global: depth, afuncs, lfunc, lrate, regval, regfunc
+#Hidden: width,      afunc, pers_lrate, w_init, b_init
+#Output: width,      afunc, pers_lrate, w_init, b_init
+#Hyperparameters before tab have no defaults, while those
+#after do. Only difference between hidden and output
+#is that ReLU is default afunc in he former and softmax is
+#default afunc in the latter. The other defaults are:
+#pers_lrate = global lrate, w_init is rand in [-1,1] and
+#b_init is rand in [0,1].
+#
+#
+crossentropy,relu,0.001,0.001,L2
+50
+25
+4
+softmax
+#Last one here ust be 4 as there are 4 figures
