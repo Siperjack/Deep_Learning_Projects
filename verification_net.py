@@ -48,7 +48,7 @@ class VerificationNet:
 
         return done_training
 
-    def train(self, generator: StackedMNISTData, epochs: np.int = 10) -> bool:
+    def train(self, generator: StackedMNISTData, epochs: int = 10) -> bool:
         """
         Train model if required. As we have a one-channel model we take care to
         only use the first channel of the data.
@@ -62,9 +62,9 @@ class VerificationNet:
 
             # "Translate": Only look at "red" channel; only use the last digit. Use one-hot for labels during training
             x_train = x_train[:, :, :, [0]]
-            y_train = keras.utils.to_categorical((y_train % 10).astype(np.int), 10)
+            y_train = keras.utils.to_categorical((y_train % 10).astype(int), 10)
             x_test = x_test[:, :, :, [0]]
-            y_test = keras.utils.to_categorical((y_test % 10).astype(np.int), 10)
+            y_test = keras.utils.to_categorical((y_test % 10).astype(int), 10)
 
             # Fit model
             self.model.fit(x=x_train, y=y_train, batch_size=1024, epochs=epochs,
@@ -105,7 +105,7 @@ class VerificationNet:
 
         return predictions, beliefs
 
-    def check_class_coverage(self, data: np.ndarray, tolerance: np.float = .8) -> np.float:
+    def check_class_coverage(self, data: np.ndarray, tolerance: float = .8) -> float:
         """
         Out of the total number of classes that can be generated, how many are in the data-set?
         I'll only could samples for which the network asserts there is at least tolerance probability
@@ -123,7 +123,7 @@ class VerificationNet:
 
     def check_predictability(self, data: np.ndarray,
                              correct_labels: list = None,
-                             tolerance: np.float = .8) -> tuple:
+                             tolerance: float = .8) -> tuple:
         """
         Out of the number of data points retrieved, how many are we able to make predictions about?
         ... and do we guess right??
@@ -148,7 +148,7 @@ class VerificationNet:
 
         return predictability, accuracy
 
-
+###This runs the code automaticly
 if __name__ == "__main__":
     gen = StackedMNISTData(mode=DataMode.MONO_BINARY_COMPLETE, default_batch_size=2048)
     net = VerificationNet(force_learn=False)
