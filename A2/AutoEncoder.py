@@ -8,7 +8,7 @@ import tensorflow as tf
 from tensorflow import keras
 import numpy as np
 from tensorflow.keras import layers, models
-
+import stacked_mnist
 import os
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
@@ -18,6 +18,7 @@ n_dim = 28
 C = 1
 latent_dim = 2
 Nchannels = 1
+epoch = 5
 
 #%%Encoder
 model = models.Sequential()
@@ -57,11 +58,13 @@ print(Autoencoder.summary())
 #evaluate 
 
 #%%Training
-
+data = StackedMNISTData(mode=DataMode.MONO_BINARY_COMPLETE, default_batch_size=2048)
+training = data.get_full_data_set(training = True)
+testing = data.get_full_data_set(training = False)
 Autoencoder.fit(
     training,
     training,#label
-    epochs = epochs,
+    epochs = epoch,
     batch_size = C,
-    validationdata=(testing,testing)
+    validation_data=testing
     )
