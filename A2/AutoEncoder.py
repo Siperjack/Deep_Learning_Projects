@@ -11,13 +11,57 @@ from tensorflow.keras import layers, models
 
 import os
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
+
+
+#%%Hyperparameters
+n_dim = 28
+C = 1
+latent_dim = 2
+Nchannels = 1
+
+#%%Encoder
 model = models.Sequential()
-model.add(layers.Conv2D(28, (3,3),activation = "relu", input_shape = (28, 28, 3)))
-model.add(layers.MaxPooling2D(pool_size = (2,2)))
-model.add(layers.Conv2D(28, (3,3),activation = "relu"))
-model.add(layers.MaxPooling2D(pool_size = (2,2)))
+
+#Block 1
+model.add(layers.Conv2D(32, (3,3),padding = "same", activation = "relu", input_shape = (n_dim, n_dim, Nchannels)))
+model.add(layers.MaxPooling2D(pool_size = (2,2))) #dim 14
+
+#Block 2
+model.add(layers.Conv2D(32, (3,3),padding = "same",activation = "relu"))
+model.add(layers.MaxPooling2D(pool_size = (2,2))) #dim 7
+
+#Block 3
 model.add(layers.Flatten())
-model.add(layers.Dense())
-loss = keras.losses.CategoricalCrossentropy()
+model.add(layers.Dense(latent_dim))
+
+#%%Decoder
+
+#Block 4
+model.add(layers.Dense(1568, activation = "relu"))
+
+#Block 5
+model.add(layers.Reshape((7, 7, 32)))
+
+#Block 6
+model.add(layers.Conv2DTranspose(32, (4,4),strides = 2, padding = "same", activation = "relu"))
+
+#Block 7
+model.add(layers.Conv2DTranspose(32, (4,4),strides = 2,padding = "same", activation = "sigmoid"))
+
+#%%Optimizers and loss
+loss = keras.losses.BinaryCrossentropy()
 optim = keras.optimizers.Adam(learning_rate = 0.001)
-print(model.summary())
+model.compile(optimizer = optim, loss=loss, metrics = "accuracy")
+Autoencoder = model
+print(Autoencoder.summary())
+#evaluate 
+
+#%%Training
+
+Autoencoder.fit(
+    training,
+    training,#label
+    epochs = epochs,
+    batch_size = C,
+    validationdata=(testing,testing)
+    )
