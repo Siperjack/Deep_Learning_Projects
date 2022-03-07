@@ -1,53 +1,90 @@
-from stacked_mnist import StackedMNISTData, DataMode
+# =============================================================================
+# import tensorflow as tf
+# from tensorflow.keras.models import Sequential
+# from tensorflow.keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPooling2D
+# 
+# =============================================================================
+import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPooling2D
 import numpy as np
+from tensorflow.keras import layers, models
+from stacked_mnist import StackedMNISTData, DataMode
+import os
+import matplotlib.pyplot as plt
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
 
-class VerificationNet:
+#%%Hyperparameters
+n_dim = 28
+C = 64
+latent_dim = 4
+Nchannels = 1
+epoch = 5
 
-    def __init__(self, force_learn: bool = False, file_name: str = "./models/verification_model") -> None:
-        """
-        Define model and set some parameters.
-        The model is  made for classifying one channel only -- if we are looking at a
-        more-channel image we will simply do the thing one-channel-at-the-time.
-        """
+def AutoEncoder():
+    def __init__(self, force_learn: bool = False, file_name: str = "./models/unspecified") -> None:
         self.force_relearn = force_learn
         self.file_name = file_name
-
-        model = Sequential()
-        model.add(Conv2D(32, kernel_size=(3, 3), activation='relu', input_shape=(28, 28, 1)))
-        for _ in range(3):
-            model.add(Conv2D(64, (3, 3), activation='relu'))
-            model.add(MaxPooling2D(pool_size=(2, 2)))
-            model.add(Dropout(0.25))
-
-        model.add(Flatten())
-        model.add(Dense(128, activation='relu'))
-        model.add(Dropout(0.5))
-        model.add(Dense(10, activation='softmax'))
-
-        model.compile(loss=keras.losses.categorical_crossentropy,
-                      optimizer=keras.optimizers.Adam(lr=.01),
-                      metrics=['accuracy'])
-
-        self.model = model
+        #Encoder
+        Encoder = models.Sequential(name='Encoder')
+        
+        #Block 1
+        Encoder.add(layers.Conv2D(64, (5,5),strides = 2, padding = "same", activation = "relu", input_shape = (n_dim, n_dim, Nchannels)))
+        Encoder.add(layers.MaxPooling2D(pool_size = (2,2))) #dim 14
+        
+        #Block 2
+        Encoder.add(layers.Conv2D(32, (3,3),strides = 2, padding = "same",activation = "relu"))
+        
+        #Block 3
+        Encoder.add(layers.Flatten())
+        Encoder.add(layers.Dense(latent_dim))
+        Encoder.add(layers.Normalization())
+        
+        self.Encoder = Encoder
+        #Decoder
+        Decoder = models.Sequential(name='Decoder')
+        #Block 4
+        Decoder.add(layers.Dense(1568, activation = "relu", input_shape = (latent_dim, Nchannels)))
+        
+        #Block 5
+        Decoder.add(layers.Reshape((7, 7, 32*latent_dim)))
+        
+        #Block 6
+        Decoder.add(layers.Conv2DTranspose(16, (4,4), strides = 2,padding = "same", activation = "relu"))
+        
+        #Block 7
+        Decoder.add(layers.Conv2DTranspose(Nchannels, (4,4), strides = 2,padding = "same", activation = "sigmoid"))
+        self.Decoder = Decoder
+        #Summary
+        #Encoder.summary()
+        #
+        #Decoder.summary()
+        #Optimizers and loss
+        Encoder_output = Encoder.output
+        out = Decoder(Encoder_output)
+        self.AutoEncoder = models.Model(Encoder.input, out, name='AutoEncoder')
+        #AutoEncoder.summary()
+        
+        loss = keras.losses.BinaryCrossentropy()
+        optim = keras.optimizers.Adam(learning_rate = 0.01)
+        self.AutoEncoder.compile(optimizer = optim, loss=loss, metrics = "accuracy")
+    
         self.done_training = self.load_weights()
 
     def load_weights(self):
         # noinspection PyBroadException
         try:
-            self.model.load_weights(filepath=self.file_name)
+            self.AutoEncoder.load_weights(filepath=self.file_name)
             # print(f"Read model from file, so I do not retrain")
             done_training = True
 
         except:
             print(f"Could not read weights for verification_net from file. Must retrain...")
-    
+            AutoEcoder.save_weights(self.file_name)
             done_training = False
 
         return done_training
+
 
     def train(self, generator: StackedMNISTData, epochs: int = 10, OwnData = False) -> bool:
         """
@@ -57,22 +94,28 @@ class VerificationNet:
         self.done_training = self.load_weights()
 
         if self.force_relearn or self.done_training is False:
-            # Get hold of data
-            x_train, y_train = generator.get_full_data_set(training=True)
-            x_test, y_test = generator.get_full_data_set(training=False)
+            if Nchannels == 1:
+                data = StackedMNISTData(mode=DataMode.MONO_BINARY_COMPLETE, default_batch_size=2048)
+            else:
+                data = StackedMNISTData(mode=DataMode.COLOR_BINARY_COMPLETE, default_batch_size=2048)
+            train_images, train_labels = data.get_full_data_set(training = True)
+            val_images, val_labels = data.get_full_data_set(training = False)
+            self.AutoEncoder.fit(
+                train_images,
+                train_images,#label
+                epochs = epoch,
+                shuffle = True,
+                batch_size = C,
+                validation_data=(val_images, val_images)
+                )
 
-            # "Translate": Only look at "red" channel; only use the last digit. Use one-hot for labels during training
-            x_train = x_train[:, :, :, [0]]
-            y_train = keras.utils.to_categorical((y_train % 10).astype(int), 10)
-            x_test = x_test[:, :, :, [0]]
-            y_test = keras.utils.to_categorical((y_test % 10).astype(int), 10)
 
             # Fit model
-            self.model.fit(x=x_train, y=y_train, batch_size=1024, epochs=epochs,
+            self.AutoEncoder.fit(x=x_train, y=y_train, batch_size=1024, epochs=epochs,
                            validation_data=(x_test, y_test))
 
             # Save weights and leave
-            self.model.save_weights(filepath=self.file_name)
+            self.AutoEncoder.save_weights(filepath=self.file_name)
             self.done_training = True
 
         return self.done_training
@@ -100,7 +143,7 @@ class VerificationNet:
         predictions = np.zeros((data.shape[0],))
         beliefs = np.ones((data.shape[0],))
         for channel in range(no_channels):
-            channel_prediction = self.model.predict(data[:, :, :, [channel]])
+            channel_prediction = self.AutoEncoder.predict(data[:, :, :, [channel]])
             beliefs = np.multiply(beliefs, np.max(channel_prediction, axis=1))
             predictions += np.argmax(channel_prediction, axis=1) * np.power(10, channel)
 
@@ -149,16 +192,23 @@ class VerificationNet:
 
         return predictability, accuracy
 
-###This runs the code automaticly
-if __name__ == "__main__":
-    gen = StackedMNISTData(mode=DataMode.MONO_BINARY_COMPLETE, default_batch_size=2048)
-    net = VerificationNet(force_learn=False)
-        
+#%%
+AE = VerificationNet(force_learn= True, file_name = "./models/BinAE")
+#%%
+reconstructed_images = Autoencoder.predict(val_images, batch_size = 1)
 
-    # I have no data generator (VAE or whatever) here, so just use a sampled set
-    img, labels = gen.get_random_batch(training=True,  batch_size=25000)
-    cov = net.check_class_coverage(data=img, tolerance=.98)
-    pred, acc = net.check_predictability(data=img, correct_labels=labels)
-    print(f"Coverage: {100*cov:.2f}%")
-    print(f"Predictability: {100*pred:.2f}%")
-    print(f"Accuracy: {100 * acc:.2f}%")
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+        

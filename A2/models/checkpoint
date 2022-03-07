@@ -1,2 +1,2 @@
-model_checkpoint_path: "verification_model"
-all_model_checkpoint_paths: "verification_model"
+model_checkpoint_path: "MONO_BINARY_MISSING"
+all_model_checkpoint_paths: "MONO_BINARY_MISSING"
