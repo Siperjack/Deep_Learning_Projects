@@ -14,7 +14,7 @@ n_dim = 28
 C = 64
 latent_dim = 4
 Nchannels = 1
-epoch = 5
+epoch = 1
    
 class AE:
     def __init__(self):
@@ -22,15 +22,23 @@ class AE:
         model = models.Sequential(name='Encoder')
         
         #Block 1
-        model.add(layers.Conv2D(64, (5,5),strides = 2, padding = "same", activation = "relu", input_shape = (n_dim, n_dim, Nchannels)))
+        model.add(layers.Conv2D(32, (3,3),strides = 1, padding = "same", activation = "relu", input_shape = (n_dim, n_dim, Nchannels)))
         model.add(layers.MaxPooling2D(pool_size = (2,2))) #dim 14
+        model.add(layers.Dropout(0.25))
         
         #Block 2
-        model.add(layers.Conv2D(32, (3,3),strides = 2, padding = "same",activation = "relu"))
+        model.add(layers.Conv2D(64, (3,3),strides = 1, padding = "same",activation = "relu"))
+        model.add(layers.MaxPooling2D(pool_size = (2,2))) #dim 14
+        model.add(layers.Dropout(0.25))
         
         #Block 3
+        model.add(layers.Conv2D(64, (3,3),strides = 1, padding = "same",activation = "relu"))
+        model.add(layers.MaxPooling2D(pool_size = (2,2))) #dim 14
+        model.add(layers.Dropout(0.25))
+        
+        #Block 4
         model.add(layers.Flatten())
-        model.add(layers.Dense(latent_dim*10))
+        model.add(layers.Dropout(0.25))
         model.add(layers.Dense(latent_dim))
         model.add(layers.Normalization())
         
@@ -43,7 +51,8 @@ class AE:
         Decoder.add(layers.Reshape((7, 7, 32*latent_dim)))
         
         #Block 6
-        Decoder.add(layers.Conv2DTranspose(16, (4,4), strides = 2,padding = "same", activation = "relu"))
+        Decoder.add(layers.Conv2DTranspose(32, (4,4), strides = 2,padding = "same", activation = "relu"))
+        Decoder.add(layers.Conv2DTranspose(64, (4,4), strides = 1,padding = "same", activation = "relu"))
         #Block 7
         Decoder.add(layers.Conv2DTranspose(Nchannels, (4,4), strides = 2,padding = "same", activation = "sigmoid"))
         Encoder_output = Encoder.output
@@ -58,6 +67,7 @@ class AE:
         self.Encoder = Encoder
         self.Decoder = Decoder
         self.AutoEncoder = AutoEncoder
+        AutoEncoder.summary()
 
     #%%Training
     
@@ -85,7 +95,7 @@ train_images, train_labels = data.get_full_data_set(training = True)
 val_images, val_labels = data.get_full_data_set(training = False)
 
 #%%
-#train(train_images, val_images, filename = "./models/MONO_BINARY_COMPLETE")
+#train(AutoEncoder, train_images, val_images, filename = "./models/MONO_BINARY_COMPLETE")
 reconstructed_images = AutoEncoder.predict(val_images)
 #%%
 n = 8
