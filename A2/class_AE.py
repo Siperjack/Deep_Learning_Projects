@@ -20,18 +20,18 @@ class AE:
         
         """Encoder"""
         
-        model = models.Sequential(name='Encoder')
-        model.add(layers.Conv2D(64, (3,3),strides = 1, padding = "same", activation = "relu", input_shape = (self.n_dim, self.n_dim, 1)))
-        model.add(layers.MaxPooling2D(pool_size = (2,2)))
-        model.add(layers.Dropout(0.25))
-        model.add(layers.Conv2D(32, (3,3),strides = 2, padding = "same",activation = "relu"))
-        model.add(layers.MaxPooling2D(pool_size = (2,2)))
-        model.add(layers.Dropout(0.25))
-        model.add(layers.Flatten())
-        model.add(layers.Dense(self.latent_dim))
-        model.add(layers.Normalization())
+        Encoder = models.Sequential(name='Encoder')
+        Encoder.add(layers.Conv2D(32, (3,3),strides = 1, padding = "same", activation = "relu", input_shape = (self.n_dim, self.n_dim, 1)))
+        #Encoder.add(layers.MaxPooling2D(pool_size = (2,2)))
+        #Encoder.add(layers.Dropout(0.25))
+        Encoder.add(layers.Conv2D(64, (3,3),strides = 2, padding = "same",activation = "relu"))
+        Encoder.add(layers.Conv2D(64, (3,3),strides = 2, padding = "same",activation = "relu"))
         
-        Encoder = model
+        """Bottleneck of Encoder"""
+        Encoder.add(layers.Flatten())
+        Encoder.add(layers.Dense(self.latent_dim))
+        Encoder.add(layers.Normalization())
+        
         
         """Decoder"""
         

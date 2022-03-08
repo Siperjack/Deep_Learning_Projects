@@ -14,7 +14,7 @@ n_dim = 28
 latent_dim = 2
 Nchannels = 1
 trained = False
-epochs = 2
+epochs = 5
 #%% Loading
 AE_COLOR_BINARY_COMPLETE = AE(trained = trained, filename = "./models/COLOR_BINARY_COMPLETE")
 AutoEncoder = AE_COLOR_BINARY_COMPLETE.AutoEncoder
@@ -26,7 +26,6 @@ AE_COLOR_BINARY_COMPLETE.train(train_images, val_images, epochs = epochs)
 
 #%% Make reconstructions
 reconstructed_images = AutoEncoder.predict(val_images)
-#%% Plot example reconstructed
 n = 8
 fig, ax = plt.subplots(2,n)
 for i in range(n):
@@ -92,3 +91,15 @@ for i in range(n):
     for j in range(n):
         plt.gray()
         ax[i,j].imshow(val_images[losses_indexes[i + n*j]].reshape((n_dim, n_dim)))
+#%% Stacked generating
+Ngen = 2048*4
+z = np.random.uniform(0,1, (Ngen, latent_dim, Nchannels))
+
+uniform_generated = AE_COLOR_BINARY_COMPLETE.Decoder.predict(z)
+
+n = 5
+fig, ax = plt.subplots(n,n)
+for i in range(n):
+    for j in range(n):
+        plt.gray()
+        ax[i,j].imshow(uniform_generated[i + n*j].reshape((n_dim, n_dim)))

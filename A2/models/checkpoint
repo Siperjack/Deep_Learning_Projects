@@ -1,2 +1,2 @@
-model_checkpoint_path: "MONO_BINARY_MISSING"
-all_model_checkpoint_paths: "MONO_BINARY_MISSING"
+model_checkpoint_path: "MONO_BINARY_COMPLETE_VAE"
+all_model_checkpoint_paths: "MONO_BINARY_COMPLETE_VAE"
