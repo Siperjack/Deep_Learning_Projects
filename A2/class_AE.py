@@ -12,9 +12,9 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 #Architecture
    
 class AE:
-    def __init__(self, filename, trained = True):
+    def __init__(self, latent_dim, filename, trained = True):
         self.n_dim = 28
-        self.latent_dim = 2
+        self.latent_dim = latent_dim
         self.filename = filename
         self.trained = trained
         
@@ -25,12 +25,20 @@ class AE:
         #Encoder.add(layers.MaxPooling2D(pool_size = (2,2)))
         #Encoder.add(layers.Dropout(0.25))
         Encoder.add(layers.Conv2D(64, (3,3),strides = 2, padding = "same",activation = "relu"))
+        #Encoder.add(layers.MaxPooling2D(pool_size = (2,2)))
+        #Encoder.add(layers.Dropout(0.25))
         Encoder.add(layers.Conv2D(64, (3,3),strides = 2, padding = "same",activation = "relu"))
+        #Encoder.add(layers.MaxPooling2D(pool_size = (2,2)))
+        #Encoder.add(layers.Dropout(0.25))
+        #Encoder.add(layers.Conv2D(32, (3,3),strides = 2, padding = "same",activation = "relu"))
         
-        """Bottleneck of Encoder"""
+        """Bottleneck of the autoencoder"""
+        
         Encoder.add(layers.Flatten())
+        #Encoder.add(layers.Dense(128, activation='relu'))
+        #Encoder.add(layers.Dropout(0.5))
         Encoder.add(layers.Dense(self.latent_dim))
-        Encoder.add(layers.Normalization())
+        #Encoder.add(layers.Normalization())
         
         
         """Decoder"""
@@ -38,20 +46,29 @@ class AE:
         Decoder = models.Sequential(name='Decoder')
         Decoder.add(layers.Dense(1568, activation = "relu", input_shape = (self.latent_dim, 1)))
         Decoder.add(layers.Reshape((7, 7, 32*self.latent_dim)))
-        Decoder.add(layers.Conv2DTranspose(32, (4,4), strides = 2,padding = "same", activation = "relu"))
-        Decoder.add(layers.Conv2DTranspose(32, (4,4), strides = 1,padding = "same", activation = "relu"))
-        Decoder.add(layers.Conv2DTranspose(1, (4,4), strides = 2,padding = "same", activation = "sigmoid"))
+        Decoder.add(layers.Conv2DTranspose(32, (3,3), strides = 2,padding = "same", activation = "relu"))
+        Decoder.add(layers.Conv2DTranspose(32, (3,3), strides = 2,padding = "same", activation = "relu"))
+        Decoder.add(layers.Conv2DTranspose(1, (3,3), strides = 1,padding = "same", activation = "sigmoid"))
         
-        """Compiling Encoder + Decoder"""
+        """Compiling Encoder + Decoder with loss and optim"""
         
-        Encoder_output = Encoder.output
-        out = Decoder(Encoder_output)
-        AutoEncoder = models.Model(Encoder.input, out, name='AutoEncoder')
+        AutoEncoder = models.Model(Encoder.input, 
+                                   Decoder(Encoder.output), 
+                                   name='AutoEncoder')
         
+        def MSE(target, pred):
+            error = tf.cast(target, tf.float32) - pred
+            print((target))
+            print((tf.cast(target, tf.float32)))
+            return tf.reduce_mean(tf.square(error), axis = [1,2,3])
+        #loss = MSE, does not work. Eery trained model returns blanks.
         loss = keras.losses.BinaryCrossentropy()
-        optim = keras.optimizers.Adam(learning_rate = 0.01)
-        AutoEncoder.compile(optimizer = optim, loss=loss, metrics = "accuracy")
-        #evaluate 
+        optim = keras.optimizers.Adam(learning_rate = 0.001)
+        
+        AutoEncoder.compile(optimizer = optim, loss = loss, metrics=['accuracy'])
+        
+        """Setting class variables"""
+        
         self.Encoder = Encoder
         self.Decoder = Decoder
         self.AutoEncoder = AutoEncoder
@@ -77,3 +94,4 @@ class AE:
             print("model is trained and weights saved")
         else:
             print("model is already trained")
+            

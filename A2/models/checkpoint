@@ -1,2 +1,2 @@
-model_checkpoint_path: "MONO_BINARY_COMPLETE_VAE"
-all_model_checkpoint_paths: "MONO_BINARY_COMPLETE_VAE"
+model_checkpoint_path: "MONO_BINARY_COMPLETE_BCE_latent4"
+all_model_checkpoint_paths: "MONO_BINARY_COMPLETE_BCE_latent4"
