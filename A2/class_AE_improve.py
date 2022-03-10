@@ -21,23 +21,37 @@ class AE:
         """Encoder"""
         
         Encoder = models.Sequential(name='Encoder')
-        Encoder.add(layers.Conv2D(8, (3,3),strides = 1, padding = "same", activation = "relu", input_shape = (self.n_dim, self.n_dim, 1)))
-        Encoder.add(layers.Conv2D(8, (3,3),strides = 2, padding = "same",activation = "relu"))
-        Encoder.add(layers.Conv2D(8, (3,3),strides = 2, padding = "same",activation = "relu"))
+        Encoder.add(layers.Conv2D(32, (3,3),strides = 1, padding = "same", activation = "relu", input_shape = (self.n_dim, self.n_dim, 1)))
+        #Encoder.add(layers.MaxPooling2D(pool_size = (2,2)))
+        #Encoder.add(layers.Dropout(0.25))
+        Encoder.add(layers.Conv2D(64, (3,3),strides = 2, padding = "same",activation = "relu"))
+        Encoder.add(layers.MaxPooling2D(pool_size = (2,2)))
+        Encoder.add(layers.Conv2D(32, (3,3),strides = 1, padding = "same",activation = "relu"))
+        #Encoder.add(layers.Dropout(0.25))
+        Encoder.add(layers.Conv2D(64, (3,3),strides = 2, padding = "same",activation = "relu"))
+        #Encoder.add(layers.MaxPooling2D(pool_size = (2,2)))
+        #Encoder.add(layers.Dropout(0.25))
+        #Encoder.add(layers.Conv2D(32, (3,3),strides = 2, padding = "same",activation = "relu"))
         
         """Bottleneck of the autoencoder"""
         
         Encoder.add(layers.Flatten())
+        Encoder.add(layers.Dense(64, activation='relu'))
+        #Encoder.add(layers.Dropout(0.5))
         Encoder.add(layers.Dense(self.latent_dim))
+        #Encoder.add(layers.Normalization())
+        
         
         """Decoder"""
         
         Decoder = models.Sequential(name='Decoder')
-        Decoder.add(layers.Dense(7*7*8, activation = "relu", input_shape = (self.latent_dim, 1)))
-        Decoder.add(layers.Reshape((7, 7, 8*self.latent_dim)))
-        Decoder.add(layers.Conv2DTranspose(8, (3,3), strides = 2,padding = "same", activation = "relu"))
-        Decoder.add(layers.Conv2DTranspose(8, (3,3), strides = 2,padding = "same", activation = "relu"))
-        Decoder.add(layers.Conv2D(1, (3,3), strides = 1, padding = "same", activation = "sigmoid"))
+        Decoder.add(layers.Dense(1568, activation = "relu", input_shape = (self.latent_dim, 1)))
+        Decoder.add(layers.Reshape((7, 7, 32*self.latent_dim)))
+        Decoder.add(layers.Conv2DTranspose(32, (3,3), strides = 2,padding = "same", activation = "relu"))
+        Decoder.add(layers.Conv2DTranspose(64, (4,4), strides = 1,padding = "same", activation = "relu"))
+        Decoder.add(layers.Conv2DTranspose(32, (5,5), strides = 2,padding = "same", activation = "relu"))
+        Decoder.add(layers.Conv2DTranspose(64, (3,3), strides = 1,padding = "same", activation = "relu"))
+        Decoder.add(layers.Conv2DTranspose(1, (3,3), strides = 1,padding = "same", activation = "sigmoid"))
         
         """Compiling Encoder + Decoder with loss and optim"""
         
@@ -45,9 +59,14 @@ class AE:
                                    Decoder(Encoder.output), 
                                    name='AutoEncoder')
         
-
+        def MSE(target, pred):
+            error = tf.cast(target, tf.float32) - pred
+            print((target))
+            print((tf.cast(target, tf.float32)))
+            return tf.reduce_mean(tf.square(error), axis = [1,2,3])
+        #loss = MSE, does not work. Eery trained model returns blanks.
         loss = keras.losses.BinaryCrossentropy()
-        optim = keras.optimizers.Adam(learning_rate = 0.01)
+        optim = keras.optimizers.Adam(learning_rate = 0.001)
         
         AutoEncoder.compile(optimizer = optim, loss = loss, metrics=['accuracy'])
         
@@ -65,7 +84,6 @@ class AE:
     
     def train(self, train_images, val_images, batch_size = 1024, epochs = 5):
         if not self.trained:
-            
             self.AutoEncoder.fit(
                 train_images,
                 train_images,#label
@@ -79,20 +97,4 @@ class AE:
             print("model is trained and weights saved")
         else:
             print("model is already trained")
-            
-    def predict(self, val_images):
-        dataset_size = len(val_images)
-        Nchannels = len(val_images[0,0,0]) #MxNxNxNchannel
-        results_stacked = np.zeros((dataset_size, 28, 28, Nchannels))
-        for i in range(Nchannels):
-            results_stacked[:,:,:,[i]] = self.AutoEncoder.predict(val_images[:,:,:,[i]])
-        return results_stacked
-    
-    def predict_from_latent(self, z_stacked):
-        dataset_size = len(z_stacked)
-        Nchannels = len(z_stacked[0,0]) #MxNxNxNchannel
-        generated_stacked = np.zeros((dataset_size, 28, 28, Nchannels))
-        for i in range(Nchannels):
-            generated_stacked[:,:,:,[i]] = self.Decoder.predict(z_stacked[:,:,[i]])
-        return generated_stacked
             
