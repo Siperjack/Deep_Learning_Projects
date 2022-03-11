@@ -16,29 +16,28 @@ n_dim = 28
 latent_dim = 16
 Nchannels = 1
 trained = True
-epochs = 10
+epochs = 8
 
 debug_mode = True
 #%% """Loading complete model and train if not trained"""
 """Loading complete model and train if not trained"""
-#VAE_MONO_BINARY_COMPLETE = VAE(latent_dim = 4, filename = "./models/VMONO_BINARY_COMPLETE_BCE_latent4", trained = trained)#BCE = BinaryCrossentropy
-#VAE_MONO_BINARY_COMPLETE = VAE(latent_dim = 2, filename = "./models/VMONO_BINARY_COMPLETE_BCE_latent2", trained = trained)
+#VAE_MONO_BINARY_COMPLETE = VAE1(latent_dim = 2, filename = "./models/VMONO_BINARY_COMPLETE_BCE_latent2", trained = trained)
 VAE_MONO_BINARY_COMPLETE = VAE(latent_dim = 16, filename = "./models/VMONO_BINARY_COMPLETE_BCE_latent16", trained = trained)
 data = StackedMNISTData(mode=DataMode.MONO_BINARY_COMPLETE, default_batch_size=2048)
 
 if debug_mode:
-    train_images, train_labels = data.get_random_batch (training = True)
+    train_images, train_labels = data.get_random_batch(training = True)
     val_images, val_labels = data.get_random_batch (training = False)
 else:
     train_images, train_labels = data.get_full_data_set(training = True)
     val_images, val_labels = data.get_full_data_set(training = False)
 
-VAE_MONO_BINARY_COMPLETE.train(train_images, val_images, epochs = epochs)
+#VAE_MONO_BINARY_COMPLETE.train(train_images, val_images, epochs = epochs)
+VAE_MONO_BINARY_COMPLETE.train_manualy(train_images, val_images, epochs = epochs)
 
 #%%"""Loading missing model and train if not trained"""
 """Loading missing model and train if not trained"""
 
-#VAE_MONO_BINARY_MISSING = VAE(latent_dim = 4, trained = trained, filename = "./models/VMONO_BINARY_MISSING_BCE_latent4")
 #VAE_MONO_BINARY_MISSING = VAE(latent_dim = 2, trained = trained, filename = "./models/VMONO_BINARY_MISSING_BCE_latent2")
 VAE_MONO_BINARY_MISSING = VAE(latent_dim = 16, trained = trained, filename = "./models/VMONO_BINARY_MISSING_BCE_latent16")
 
@@ -51,10 +50,11 @@ else:
     train_images_missing, train_labels_missing = data_missing.get_full_data_set(training = True)
     val_images_missing, val_labels_missing = data_missing.get_full_data_set(training = False)
 
-VAE_MONO_BINARY_MISSING.train(train_images_missing, val_images_missing,epochs = epochs)
+#VAE_MONO_BINARY_MISSING.train(train_images_missing, val_images_missing,epochs = epochs)
+VAE_MONO_BINARY_MISSING.train_manualy(train_images_missing, val_images_missing,epochs = epochs)
 #%% """Make reconstructions and plot"""
 """Make reconstructions and plot"""
-reconstructed_images = AE_MONO_BINARY_COMPLETE.predict(val_images)
+reconstructed_images = VAE_MONO_BINARY_COMPLETE.predict(val_images)
 n = 8
 fig, ax = plt.subplots(4,n)
 for i in range(n):
@@ -86,7 +86,7 @@ else:
 #z = np.random.uniform(0,1, (Ngen, latent_dim, Nchannels))
 z = np.random.randn(Ngen, latent_dim, Nchannels)
 
-generated = AE_MONO_BINARY_COMPLETE.predict_from_latent(z)
+generated = VAE_MONO_BINARY_COMPLETE.predict_from_latent(z)
 
 n = 5
 fig, ax = plt.subplots(n,n)
@@ -106,9 +106,16 @@ print(f"Predictability: {100*pred:.2f}%")
     
 #%%"""Plot anomalies for MONO"""
 """Plot anomalies for MONO"""
-results = AE_MONO_BINARY_MISSING.predict(val_images)
+BCE = tf.keras.losses.BinaryCrossentropy(from_logits=True, axis=-1)
+results = VAE_MONO_BINARY_MISSING.predict(val_images)
 
-losses = K.mean(K.square(results - tf.cast(val_images, tf.float32)), axis = [1,2,3])
+reconstrucion_loss_is_true = True
+if reconstrucion_loss_is_true:
+    losses = tf.reduce_mean(K.square(results - val_images), axis = [1,2,3])
+else:
+    for i in range(len(results_stacked)):
+        losses_stacked[i] = BCE(val_images_color[i,:,:,:], results_stacked[i,:,:,:]).numpy()
+        
 losses_indexes = tf.argsort(losses)[::-1]
 
 #Plot example reconstructed with highest errors
@@ -133,7 +140,7 @@ n = 8
 dataset_size = len(val_images_color)
 reconstructed_color = np.zeros((dataset_size, 28, 28, 3))
 
-reconstructed_color = AE_MONO_BINARY_COMPLETE.predict(val_images_color)
+reconstructed_color = VAE_MONO_BINARY_COMPLETE.predict(val_images_color)
 fig, ax = plt.subplots(2,n)
 for i in range(n):
     ax[0,i].imshow(val_images_color[i,:,:,:]*255)
@@ -155,7 +162,7 @@ Nchannels = 3
 #z_stacked = np.random.uniform(0,1, (Ngen, latent_dim, Nchannels))
 z_stacked = np.random.randn(Ngen, latent_dim, Nchannels)
 
-generated_stacked = AE_MONO_BINARY_COMPLETE.predict_from_latent(z_stacked)
+generated_stacked = VAE_MONO_BINARY_COMPLETE.predict_from_latent(z_stacked)
 n = 5
 fig, ax = plt.subplots(n,n)
 for i in range(n):
@@ -176,8 +183,16 @@ print(f"Predictability: {100*pred:.2f}%")
 
 #%%"""Plot anomalies for STACKED"""
 """Plot anomalies for STACKED"""
-results_stacked = AE_MONO_BINARY_MISSING.predict(val_images_color)
-losses_stacked = tf.reduce_mean(K.square(results_stacked - val_images_color), axis = [1,2,3])
+results_stacked = VAE_MONO_BINARY_MISSING.predict(val_images_color)
+BCE = tf.keras.losses.BinaryCrossentropy(from_logits=True, axis=-1)
+
+reconstrucion_loss_is_true = True
+if reconstrucion_loss_is_true:
+    losses_stacked = tf.reduce_mean(K.square(results_stacked - val_images_color), axis = [1,2,3])
+else:
+    for i in range(len(results_stacked)):
+        losses_stacked[i] = BCE(val_images_color[i,:,:,:], results_stacked[i,:,:,:]).numpy()
+        
 losses_stacked_indexes = tf.argsort(losses_stacked)[::-1]
 
 #Plot example reconstructed with highest errors

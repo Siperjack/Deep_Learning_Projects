@@ -95,4 +95,3 @@ class AE:
         for i in range(Nchannels):
             generated_stacked[:,:,:,[i]] = self.Decoder.predict(z_stacked[:,:,[i]])
         return generated_stacked
-            

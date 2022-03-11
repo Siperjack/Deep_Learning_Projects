@@ -13,17 +13,16 @@ import keras.backend as K
 #%%"""Global constants"""
 """Global constants"""
 n_dim = 28
-latent_dim = 2
+latent_dim = 16
 Nchannels = 1
 trained = True
-epochs = 25
+epochs = 15
 
 debug_mode = True
 #%% """Loading complete model and train if not trained"""
 """Loading complete model and train if not trained"""
-#untrainedAE_MONO_BINARY_COMPLETE = AE(latent_dim = 4, filename = "./models/MONO_BINARY_COMPLETE_BCE_latent4", trained = trained)#BCE = BinaryCrossentropy
-AE_MONO_BINARY_COMPLETE = AE(latent_dim = 2, filename = "./models/MONO_BINARY_COMPLETE_BCE_latent2", trained = trained)
-#AE_MONO_BINARY_COMPLETE = AE(latent_dim = 16, filename = "./models/MONO_BINARY_COMPLETE_BCE_latent16", trained = trained)
+#AE_MONO_BINARY_COMPLETE = AE(latent_dim = 2, filename = "./models/MONO_BINARY_COMPLETE_BCE_latent2", trained = trained)
+AE_MONO_BINARY_COMPLETE = AE(latent_dim = 16, filename = "./models/MONO_BINARY_COMPLETE_BCE_latent16", trained = trained)
 data = StackedMNISTData(mode=DataMode.MONO_BINARY_COMPLETE, default_batch_size=2048)
 
 if debug_mode:
@@ -37,10 +36,8 @@ AE_MONO_BINARY_COMPLETE.train(train_images, val_images, epochs = epochs)
 
 #%%"""Loading missing model and train if not trained"""
 """Loading missing model and train if not trained"""
-epochs = epochs//2
-#untraindAE_MONO_BINARY_MISSING = AE(latent_dim = 4, trained = trained, filename = "./models/MONO_BINARY_MISSING_BCE_latent4")
-AE_MONO_BINARY_MISSING = AE(latent_dim = 2, trained = trained, filename = "./models/MONO_BINARY_MISSING_BCE_latent2")
-#AE_MONO_BINARY_MISSING = AE(latent_dim = 16, trained = trained, filename = "./models/MONO_BINARY_MISSING_BCE_latent16")
+#AE_MONO_BINARY_MISSING = AE(latent_dim = 2, trained = trained, filename = "./models/MONO_BINARY_MISSING_BCE_latent2")
+AE_MONO_BINARY_MISSING = AE(latent_dim = 16, trained = trained, filename = "./models/MONO_BINARY_MISSING_BCE_latent16")
 
 data_missing = StackedMNISTData(mode=DataMode.MONO_BINARY_MISSING, default_batch_size=2048)
 if debug_mode:
@@ -105,9 +102,16 @@ print(f"Predictability: {100*pred:.2f}%")
     
 #%%"""Plot anomalies for MONO"""
 """Plot anomalies for MONO"""
+BCE = tf.keras.losses.BinaryCrossentropy(from_logits=True, axis=-1)
 results = AE_MONO_BINARY_MISSING.predict(val_images)
+losses = np.zeros(len(results))
 
-losses = K.mean(K.square(results - tf.cast(val_images, tf.float32)), axis = [1,2,3])
+reconstrucion_loss_is_true = True
+if reconstrucion_loss_is_true:
+    losses = tf.reduce_mean(K.square(results - val_images), axis = [1,2,3])
+else:
+    for i in range(len(results)):
+        losses[i] = BCE(val_images[i,:,:,:], results[i,:,:,:]).numpy()
 losses_indexes = tf.argsort(losses)[::-1]
 
 #Plot example reconstructed with highest errors
@@ -176,8 +180,18 @@ print(f"Predictability: {100*pred:.2f}%")
 #%%"""Plot anomalies for STACKED"""
 """Plot anomalies for STACKED"""
 results_stacked = AE_MONO_BINARY_MISSING.predict(val_images_color)
-losses_stacked = tf.reduce_mean(K.square(results_stacked - val_images_color), axis = [1,2,3])
+BCE = tf.keras.losses.BinaryCrossentropy(from_logits=True, axis=-1)
+losses_stacked = np.zeros(len(results_stacked))
+
+reconstrucion_loss_is_true = True
+if reconstrucion_loss_is_true:
+    losses_stacked = tf.reduce_mean(K.square(results_stacked - val_images_color), axis = [1,2,3])
+else:
+    for i in range(len(results_stacked)):
+        losses_stacked[i] = BCE(val_images_color[i,:,:,:], results_stacked[i,:,:,:]).numpy()
+
 losses_stacked_indexes = tf.argsort(losses_stacked)[::-1]
+
 
 #Plot example reconstructed with highest errors
 n = 5

@@ -1,2 +1,2 @@
-model_checkpoint_path: "MONO_BINARY_MISSING_BCE_latent2"
-all_model_checkpoint_paths: "MONO_BINARY_MISSING_BCE_latent2"
+model_checkpoint_path: "VMONO_BINARY_MISSING_BCE_latent2"
+all_model_checkpoint_paths: "VMONO_BINARY_MISSING_BCE_latent2"
