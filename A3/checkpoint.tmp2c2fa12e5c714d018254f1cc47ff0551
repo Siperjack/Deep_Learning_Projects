@@ -1,0 +1,2 @@
+model_checkpoint_path: "naiveLSTM"
+all_model_checkpoint_paths: "naiveLSTM"
