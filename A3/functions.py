@@ -36,7 +36,8 @@ def create_dataset(data, n_seq):
     y_data = np.asarray(data.values[:,[-1]]).astype(np.float32) #(225089, 1)
     x_data = np.concatenate((x_data[1:], y_data[:-1]), axis = 1) #Data in timestep t_i+1 uses y from t_i
     y_data = y_data[:-1]
-    
+    x_data, x_norm = sklearn.preprocessing.normalize(x_data)
+    y_data, y_norm = sklearn.preprocessing.normalize(y_data)
     
     x_list, y_list = [], []
     print(len(x_data))
@@ -45,4 +46,4 @@ def create_dataset(data, n_seq):
         y_list.append(y_data[i:(i+n_seq)])
         
     print(len(x_list))
-    return np.array(x_list), np.array(y_list)
+    return np.array(x_list), np.array(y_list), x_norm, y_norm 

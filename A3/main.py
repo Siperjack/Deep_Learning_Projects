@@ -40,7 +40,7 @@ print(y_train.shape)
 print(x_val[0].shape)
 print(y_val.shape)
 
-        
+
 #%%
 N_seq = 20
 x_train, y_train = functions.create_dataset(df_train, N_seq)
@@ -51,7 +51,7 @@ trained = True
 model = RNN(n_seq = N_seq, n_dim = 9, filename = "./models/LSTM6420", trained = trained)#LSTMXXYY means X in lst parameter an Y seq_length
 model.train(x_train, y_train, x_val, y_val, epochs = 20)
 
-    
+
 #%%    
 print(x_val.shape)
 print(y_val.shape)
@@ -62,18 +62,18 @@ print(y_val[-600:-200,-1].shape)
 full_series = np.concatenate((y_val[-600:-200,-1], forecasts), axis = 0)
 plt.plot(full_series, "r")
 plt.plot(y_val[-600:,-1], "b")
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

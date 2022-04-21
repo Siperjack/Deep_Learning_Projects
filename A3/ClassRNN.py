@@ -24,7 +24,7 @@ class RNN:
         Input = keras.Input(shape = (self.n_seq, self.n_dim), name='Input') # [n_batch, n_seq, n_dim]
         print("input shape is: ", Input.shape)
         
-        x = layers.LSTM(64, activation = "relu", return_sequences=True, name = "LSTM_unit_1")(Input)
+        x = layers.LSTM(32, activation = "relu", return_sequences=True, name = "LSTM_unit_1")(Input)
         Output = layers.Dense(1, activation = "linear")(x) #output should be unbounded
         
         self.Model = models.Model(Input, Output, name='RNN')
