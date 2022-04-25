@@ -1,2 +1,2 @@
-model_checkpoint_path: "LSTM32144full"
-all_model_checkpoint_paths: "LSTM32144full"
+model_checkpoint_path: "test"
+all_model_checkpoint_paths: "test"
