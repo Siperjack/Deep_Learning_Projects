@@ -46,4 +46,45 @@ def create_dataset(data, n_seq):
         y_list.append(y_data[i:(i+n_seq)])
         
     print(len(x_list))
-    return np.array(x_list), np.array(y_list), x_norm, y_norm 
+    return np.array(x_list), np.array(y_list), x_norm, y_norm
+
+def struct_imb(df_train, x0,x1):
+    first_change = 0
+    for i in range(20):
+        df_train["total"][i]
+        if df_train["total"][i+1] != df_train["total"][i]:
+            first_change = i+1
+    
+    print(len(df_train["total"]))
+    y = np.zeros(1 + len(df_train["total"][first_change + 6::12]))
+    if first_change >= 6:
+        y[0] = np.asarray(df_train["total"][first_change - 6])
+        y[1:] = np.asarray(df_train["total"][first_change + 6::12])
+    else:
+        y[0] = np.asarray(df_train["total"][0])
+        y[1:] = np.asarray(df_train["total"][first_change + 6::12])
+    x = np.asarray([0] + [i for i in range(first_change + 6,len(df_train["total"]),12)])
+    print(x)
+    plt.plot(x[0:5],y[0:5])
+    f = interp1d(x, y, kind = "cubic")
+    x_new_end = x[-1]
+    x_new = np.arange(0, len(df_train["total"]))[:x_new_end]
+    print(x[-1], x_new[-1])
+    print(f"x_new is {x_new}")
+    fig, ax = plt.subplots((2))
+    ax[0].plot(x_new[x0:x1],np.asarray(df_train["total"][x0:x1]),label = "real data")
+    ax[0].plot(x_new[x0:x1],f(x_new)[x0:x1], label = "smooth data")
+    ax[0].legend()
+    ax[1].plot(x_new[x0:x1],np.asarray(df_train["total"][x0:x1])-f(x_new)[x0:x1],label = "error")
+    ax[1].legend()
+    
+    fig, ax = plt.subplots((2))
+    ax[0].plot(x_new[x0:x1],np.asarray(df_train["total"][x0:x1]),label = "real data")
+    ax[0].plot(x_new[x0:x1],f(x_new)[x0:x1], label = "smooth data")
+    ax[0].legend()
+    ax[1].plot(x_new[x0:x1],np.asarray(df_train["total"][x0:x1])-f(x_new)[x0:x1],label = "error")
+    ax[1].legend()
+
+# struct_imb(df_train,-80,-1)
+
+# def struct_imb2(data, x0,x1):
