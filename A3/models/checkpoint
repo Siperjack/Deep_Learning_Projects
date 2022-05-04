@@ -1,2 +1,2 @@
-model_checkpoint_path: "LSTM_64_144_full_40epoch_double"
-all_model_checkpoint_paths: "LSTM_64_144_full_40epoch_double"
+model_checkpoint_path: "LSTM_128_144_nolag_notime_50epoch"
+all_model_checkpoint_paths: "LSTM_128_144_nolag_notime_50epoch"
