@@ -1,2 +1,2 @@
-model_checkpoint_path: "ALT_LSTM_128_144_full_50epoch_lr1e-4_batch128_regval01"
-all_model_checkpoint_paths: "ALT_LSTM_128_144_full_50epoch_lr1e-4_batch128_regval01"
+model_checkpoint_path: "ALT_LSTM_64_144_full_50epoch_batch128"
+all_model_checkpoint_paths: "ALT_LSTM_64_144_full_50epoch_batch128"
